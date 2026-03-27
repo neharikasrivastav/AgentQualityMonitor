@@ -1,6 +1,6 @@
 # Agent Quality Monitor
 
-A fully functional, single-file HTML prototype for monitoring AI agent health, query confidence, flagged responses, and escalation workflows in enterprise data environments.
+A fully functional HTML dashboard for monitoring AI agent health, query confidence, flagged responses, and escalation workflows in enterprise data environments.
 
 Built to solve the **Enterprise Trust Gap** — the "Day 2" problem where companies deploy AI agents on their data but have no visibility into when those agents silently degrade, return wrong answers, or drift after schema changes.
 
@@ -8,10 +8,10 @@ Built to solve the **Enterprise Trust Gap** — the "Day 2" problem where compan
 
 ## Live Demo
 
-Open `agent_quality_monitor.html` directly in any browser. No build step, no dependencies, no server required.
+Open `index.html` directly in any browser. No build step, no dependencies, no server required.
 
 ```bash
-open "agent_quality_monitor.html"
+open index.html
 ```
 
 > Requires an internet connection for Chart.js (CDN) and Google Fonts to render correctly.
@@ -294,7 +294,18 @@ The threshold is configurable per workspace. Moving it higher catches more uncer
 
 ```
 AgentQualityMonitor/
-├── wisdomai_agent_monitor_prototype (1).html   # entire app — single file
+├── index.html          # HTML structure only
+├── styles.css          # all CSS (variables, layout, components)
+├── js/
+│   ├── data.js         # agents[], flagData[], constants
+│   ├── state.js        # shared state object + showToast()
+│   ├── charts.js       # Chart.js init (trend + agent charts)
+│   ├── agents.js       # agent table, cards, detail panel
+│   ├── flags.js        # flag rows, detail panel, resolve/escalate/dismiss
+│   ├── escalations.js  # escalations inbox view
+│   ├── modal.js        # configure alert modal
+│   ├── export.js       # CSV export
+│   └── app.js          # event listeners, view switching, init
 ├── .gitignore
 └── README.md
 ```
