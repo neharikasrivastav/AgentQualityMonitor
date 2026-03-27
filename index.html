@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentIQ — Agent Quality Monitor</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ── NAV ─────────────────────────────────────────────────── -->
+<nav class="nav">
+  <div class="logo">
+    <div class="logo-icon">A</div>
+    <div class="logo-text">AgentIQ <span class="logo-sub">/ Agent Monitor</span></div>
+  </div>
+  <div class="nav-pills">
+    <button class="pill on" data-view="overview">Overview</button>
+    <button class="pill" data-view="agents">Agents</button>
+    <button class="pill" data-view="flags">Flags</button>
+    <button class="pill" data-view="escalations">Escalations</button>
+    <button class="pill" data-view="settings">Settings</button>
+  </div>
+  <div class="nav-right">
+    <span class="tag tag-live">● LIVE</span>
+    <div class="tooltip-wrap">
+      <span class="tag tag-hipaa">HIPAA · GDPR · SOC2</span>
+      <div class="tooltip-box">
+        <strong>Compliance Protections Active</strong>
+        <div class="tc-row"><span class="tc-dot" style="background:var(--green)"></span>Responses below 60% confidence are suppressed and logged for audit trail</div>
+        <div class="tc-row"><span class="tc-dot" style="background:var(--amber)"></span>All flagged queries retained for 90 days per HIPAA requirements</div>
+        <div class="tc-row"><span class="tc-dot" style="background:var(--blue)"></span>SOC 2 Type II certified · Single-tenant architecture · Row/column-level security</div>
+        <div class="tc-row"><span class="tc-dot" style="background:var(--violet)"></span>GDPR-compliant · EU data residency available on VPC/on-prem deployments</div>
+      </div>
+    </div>
+    <div class="avatar">NS</div>
+  </div>
+</nav>
+
+<div class="shell">
+
+  <!-- ── SIDEBAR ───────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sb-label">Agents</div>
+    <div class="sb-item on" data-filter="all"><span class="sb-dot" style="background:var(--green)"></span>All Agents<span class="sb-ct green">12</span></div>
+    <div class="sb-item" data-filter="degraded"><span class="sb-dot" style="background:var(--red)"></span>Degraded<span class="sb-ct red" id="sb-degraded">2</span></div>
+    <div class="sb-item" data-filter="warning"><span class="sb-dot" style="background:var(--amber)"></span>Warning<span class="sb-ct amber" id="sb-warning">1</span></div>
+    <div class="sb-divider"></div>
+    <div class="sb-label">Data Sources</div>
+    <div class="sb-item" data-filter="snowflake"><span class="sb-dot" style="background:var(--blue)"></span>Snowflake</div>
+    <div class="sb-item" data-filter="salesforce"><span class="sb-dot" style="background:var(--violet)"></span>Salesforce CRM</div>
+    <div class="sb-item" data-filter="postgres"><span class="sb-dot" style="background:var(--cyan)"></span>Postgres</div>
+    <div class="sb-item" data-filter="bigquery"><span class="sb-dot" style="background:var(--muted)"></span>BigQuery</div>
+    <div class="sb-divider"></div>
+    <div class="sb-label">Escalations</div>
+    <div class="sb-item"><span class="sb-dot" style="background:var(--red)"></span>Open<span class="sb-ct red" id="sb-open">7</span></div>
+    <div class="sb-item"><span class="sb-dot" style="background:var(--muted)"></span>Resolved<span class="sb-ct" id="sb-resolved-ct">41</span></div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ── OVERVIEW VIEW ─────────────────────────────────── -->
+    <div id="view-overview" class="view-section active">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Agent Quality Monitor</div>
+          <div class="page-sub">Last refreshed <span id="refresh-time">0</span> seconds ago · 12 agents active · Patreon workspace</div>
+        </div>
+        <div class="header-actions">
+          <button class="btn" id="export-btn">Export Report</button>
+          <button class="btn-primary btn" id="configure-alert-btn">+ Configure Alert</button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats">
+        <div class="sc c-cyan">
+          <div class="sc-label">Overall Accuracy</div>
+          <div class="sc-val" style="color:var(--cyan)">96.2%</div>
+          <div class="sc-delta up">↑ 1.4% vs last week</div>
+        </div>
+        <div class="sc c-red">
+          <div class="sc-label">Open Flags</div>
+          <div class="sc-val" style="color:var(--red)" id="stat-flags">7</div>
+          <div class="sc-delta dn">↑ 3 new today</div>
+        </div>
+        <div class="sc c-amber">
+          <div class="sc-label">Escalations</div>
+          <div class="sc-val" style="color:var(--amber)" id="stat-esc">2</div>
+          <div class="sc-delta">Awaiting review</div>
+        </div>
+        <div class="sc c-green">
+          <div class="sc-label">Queries Today</div>
+          <div class="sc-val" style="color:var(--green)">1,847</div>
+          <div class="sc-delta up">↑ 12% vs yesterday</div>
+        </div>
+      </div>
+
+      <!-- 7-Day Accuracy Trend -->
+      <div class="overview-trend">
+        <div class="overview-trend-head">
+          <span class="overview-trend-title">7-Day Overall Accuracy Trend</span>
+          <div class="overview-trend-meta">
+            <span style="color:var(--cyan);font-family:'DM Mono',monospace;font-weight:600;">96.2% today</span>
+            <span>Across all 12 agents</span>
+          </div>
+        </div>
+        <div class="overview-trend-chart"><canvas id="trend-chart"></canvas></div>
+      </div>
+
+      <!-- Confidence Threshold -->
+      <div class="threshold-bar">
+        <div class="threshold-top">
+          <span class="threshold-label">Confidence threshold: <strong id="thresh-label">80%</strong></span>
+          <input type="range" id="threshold-slider" min="50" max="95" value="80" step="1">
+          <div class="threshold-counts">
+            <span class="tc" style="background:var(--red-dim);color:var(--red)" id="tc-suppressed">2 suppressed</span>
+            <span class="tc" style="background:var(--amber-dim);color:var(--amber)" id="tc-flagged">3 flagged</span>
+            <span class="tc" style="background:var(--green-dim);color:var(--green)" id="tc-ok">2 ok</span>
+          </div>
+        </div>
+        <div class="threshold-bottom">
+          <span class="threshold-impact" id="threshold-impact">At 80% threshold, ~34 queries/day would be flagged or suppressed</span>
+        </div>
+      </div>
+
+      <!-- Agent Performance + Active Flags -->
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Agent Performance</span>
+            <span class="card-action" id="view-all-agents">View all →</span>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>Agent</th><th>Accuracy</th><th>Status</th><th>Trend</th></tr></thead>
+            <tbody id="agent-tbody"></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Active Flags</span>
+            <span class="card-action" id="clear-all-action">Clear resolved →</span>
+          </div>
+          <div class="alert-list" id="alert-list">
+            <div class="alert-item" data-flag="f1"><div class="alert-icon" style="background:var(--red-dim)">🚨</div><div class="alert-body"><div class="alert-title">Ads Attribution accuracy drop</div><div class="alert-meta">Ads Attribution · 14 min ago · BigQuery schema change</div></div><span class="alert-badge" style="background:var(--red-dim);color:var(--red)">CRIT</span></div>
+            <div class="alert-item" data-flag="f3"><div class="alert-icon" style="background:var(--red-dim)">⚠️</div><div class="alert-body"><div class="alert-title">Support Triage returning null joins</div><div class="alert-meta">Support Triage · 31 min ago · 23 queries affected</div></div><span class="alert-badge" style="background:var(--red-dim);color:var(--red)">HIGH</span></div>
+            <div class="alert-item" data-flag="f2"><div class="alert-icon" style="background:var(--amber-dim)">📉</div><div class="alert-body"><div class="alert-title">Creator Retention trending down</div><div class="alert-meta">Creator Retention · 2 hr ago · Below 90% threshold</div></div><span class="alert-badge" style="background:var(--amber-dim);color:var(--amber)">MED</span></div>
+            <div class="alert-item" data-flag="f4"><div class="alert-icon" style="background:var(--amber-dim)">🔍</div><div class="alert-body"><div class="alert-title">Low-confidence response routed</div><div class="alert-meta">GTM Pipeline · 3 hr ago · Confidence 61%</div></div><span class="alert-badge" style="background:var(--amber-dim);color:var(--amber)">MED</span></div>
+            <div class="alert-item" data-flag="info"><div class="alert-icon" style="background:var(--blue-dim)">ℹ️</div><div class="alert-body"><div class="alert-title">New semantic context added</div><div class="alert-meta">Revenue Analyst · 5 hr ago · 4 new terms indexed</div></div><span class="alert-badge" style="background:var(--blue-dim);color:var(--blue)">INFO</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flagged Queries + Escalation Workflow -->
+      <div class="bottom-row">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Flagged Queries — click to review</span>
+            <span class="card-action" id="open-flag-ct">7 open</span>
+          </div>
+          <div id="flag-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Escalation Workflow</span>
+            <span class="card-action" id="configure-workflow-btn">Configure →</span>
+          </div>
+          <div style="padding:14px 16px;">
+            <div style="display:flex;gap:10px;margin-bottom:14px;">
+              <div style="display:flex;flex-direction:column;align-items:center;"><div style="width:22px;height:22px;border-radius:50%;background:var(--green-dim);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">1</div><div style="width:1px;flex:1;min-height:14px;background:var(--border2);margin-top:3px;"></div></div>
+              <div style="flex:1;padding-bottom:4px;"><div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:2px;">Query received & scored</div><div style="font-size:10px;color:var(--muted2);line-height:1.5;">Adaptive Context Engine evaluates semantic match and generates a confidence score before delivery.</div></div>
+            </div>
+            <div style="display:flex;gap:10px;margin-bottom:14px;">
+              <div style="display:flex;flex-direction:column;align-items:center;"><div style="width:22px;height:22px;border-radius:50%;background:var(--blue-dim);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">2</div><div style="width:1px;flex:1;min-height:14px;background:var(--border2);margin-top:3px;"></div></div>
+              <div style="flex:1;padding-bottom:4px;"><div style="font-size:11px;font-weight:600;color:var(--blue);margin-bottom:2px;">Threshold check</div><div style="font-size:10px;color:var(--muted2);line-height:1.5;">Below 80% → flagged. Between 60–80% → warning label shown. Below 60% → suppressed entirely.</div></div>
+            </div>
+            <div style="display:flex;gap:10px;margin-bottom:14px;">
+              <div style="display:flex;flex-direction:column;align-items:center;"><div style="width:22px;height:22px;border-radius:50%;background:var(--amber-dim);color:var(--amber);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">3</div><div style="width:1px;flex:1;min-height:14px;background:var(--border2);margin-top:3px;"></div></div>
+              <div style="flex:1;padding-bottom:4px;"><div style="font-size:11px;font-weight:600;color:var(--amber);margin-bottom:2px;">Data team notified</div><div style="font-size:10px;color:var(--muted2);line-height:1.5;">Flagged queries route to the data owner via Slack or email with full context and suggested fix.</div></div>
+            </div>
+            <div style="display:flex;gap:10px;">
+              <div style="display:flex;flex-direction:column;align-items:center;"><div style="width:22px;height:22px;border-radius:50%;background:var(--red-dim);color:var(--red);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">4</div></div>
+              <div style="flex:1;"><div style="font-size:11px;font-weight:600;color:var(--red);margin-bottom:2px;">Context retrained & resolved</div><div style="font-size:10px;color:var(--muted2);line-height:1.5;">Approved corrections feed back to the Adaptive Context Engine. Accuracy delta tracked per cycle.</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /view-overview -->
+
+    <!-- ── AGENTS VIEW ───────────────────────────────────── -->
+    <div id="view-agents" class="view-section">
+      <div class="page-header">
+        <div><div class="page-title">Agents</div><div class="page-sub" id="agents-view-sub">All 6 agents · health status · performance history</div></div>
+        <div class="header-actions">
+          <button class="btn btn-primary" id="agents-configure-alert-btn">+ Configure Alert</button>
+        </div>
+      </div>
+      <div class="agents-toolbar">
+        <input class="search-input" id="agent-search" type="text" placeholder="Search agents…">
+        <button class="filter-chip on" data-chip="all">All</button>
+        <button class="filter-chip" data-chip="green">Healthy</button>
+        <button class="filter-chip" data-chip="amber">Warning</button>
+        <button class="filter-chip" data-chip="red">Degraded</button>
+      </div>
+      <div class="agent-cards" id="agent-cards"></div>
+    </div>
+
+    <!-- ── FLAGS VIEW ────────────────────────────────────── -->
+    <div id="view-flags" class="view-section">
+      <div class="page-header">
+        <div><div class="page-title">Flags</div><div class="page-sub">All flagged queries across agents</div></div>
+        <div class="header-actions">
+          <button class="btn" id="flags-export-btn">Export Report</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">All Flagged Queries</span>
+          <span class="card-action" id="flags-view-ct">7 open</span>
+        </div>
+        <div id="flag-list-full"></div>
+      </div>
+    </div>
+
+    <!-- ── ESCALATIONS VIEW ──────────────────────────────── -->
+    <div id="view-escalations" class="view-section">
+      <div class="page-header">
+        <div><div class="page-title">Escalations</div><div class="page-sub">Open escalations awaiting data team review</div></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Escalation Inbox</span>
+          <span class="card-action" id="esc-count-badge">0 open</span>
+        </div>
+        <div id="esc-list"></div>
+      </div>
+    </div>
+
+    <!-- ── SETTINGS VIEW ─────────────────────────────────── -->
+    <div id="view-settings" class="view-section">
+      <div class="page-header">
+        <div><div class="page-title">Settings</div><div class="page-sub">Configure alerts, thresholds, and compliance settings</div></div>
+        <div class="header-actions">
+          <button class="btn btn-primary" id="settings-save-btn">Save Changes</button>
+        </div>
+      </div>
+      <div class="settings-grid">
+
+        <div class="settings-card">
+          <div class="settings-card-title">Confidence Thresholds</div>
+          <div class="settings-card-sub">Per-agent minimum confidence before flagging or suppression</div>
+          <div class="form-group">
+            <label class="form-label">Global threshold: <strong id="settings-thresh-val">80%</strong></label>
+            <input type="range" id="settings-threshold" min="50" max="95" value="80" step="1" style="width:100%;margin-top:6px;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Suppression floor</label>
+            <select class="form-control">
+              <option>60% — suppress below this (default)</option>
+              <option>55% — more permissive</option>
+              <option>65% — more conservative</option>
+              <option>70% — strict mode</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Flag window</label>
+            <select class="form-control">
+              <option>Real-time (default)</option>
+              <option>Batch — every 15 minutes</option>
+              <option>Batch — every hour</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-card-title">Notification Routing</div>
+          <div class="settings-card-sub">Where flagged queries get routed for human review</div>
+          <div class="form-group">
+            <label class="form-label">Slack webhook URL</label>
+            <input class="form-control" type="text" placeholder="https://hooks.slack.com/services/…" value="https://hooks.slack.com/services/T04X…">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Alert email</label>
+            <input class="form-control" type="email" placeholder="data-team@company.com" value="data-team@patreon.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Notify on severity</label>
+            <select class="form-control">
+              <option>CRIT and HIGH only</option>
+              <option selected>CRIT, HIGH, and MED</option>
+              <option>All (including INFO)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-card-title">Compliance & Audit</div>
+          <div class="settings-card-sub">Data retention, audit logging, and regulatory controls</div>
+          <div class="toggle-row"><div><div class="toggle-label">HIPAA audit logging</div><div class="toggle-sub">Retain all flagged queries for 90 days</div></div><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div><div class="toggle-label">GDPR data residency</div><div class="toggle-sub">Restrict data to EU nodes</div></div><label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div><div class="toggle-label">SOC 2 event logging</div><div class="toggle-sub">Log all admin actions to audit trail</div></div><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div><div class="toggle-label">Export on resolve</div><div class="toggle-sub">Auto-export CSV when flag is resolved</div></div><label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label></div>
+        </div>
+
+        <div class="settings-card">
+          <div class="settings-card-title">Role-Based Access</div>
+          <div class="settings-card-sub">Who can view, resolve, and configure this workspace</div>
+          <div class="rbac-row"><div class="rbac-avatar">NS</div><div class="rbac-name">Neharika S.</div><span class="rbac-role">admin</span></div>
+          <div class="rbac-row"><div class="rbac-avatar" style="background:linear-gradient(135deg,var(--cyan),var(--blue))">JD</div><div class="rbac-name">james@patreon.com</div><span class="rbac-role">reviewer</span></div>
+          <div class="rbac-row"><div class="rbac-avatar" style="background:linear-gradient(135deg,var(--green),var(--cyan))">SR</div><div class="rbac-name">sara@patreon.com</div><span class="rbac-role">reviewer</span></div>
+          <div class="rbac-row"><div class="rbac-avatar" style="background:linear-gradient(135deg,var(--amber),var(--red))">MA</div><div class="rbac-name">maya@patreon.com</div><span class="rbac-role">viewer</span></div>
+          <div style="margin-top:12px;">
+            <button class="btn btn-sm" style="width:100%" onclick="showToast('👤','Invite sent','Team member invitation emailed successfully.')">+ Invite team member</button>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /view-settings -->
+
+  </main>
+</div><!-- /shell -->
+
+<!-- ── DETAIL OVERLAY ────────────────────────────────────── -->
+<div class="detail-overlay" id="detail-overlay"></div>
+
+<!-- ── FLAG DETAIL PANEL ─────────────────────────────────── -->
+<div class="detail-panel" id="detail-panel">
+  <div class="dp-head">
+    <span class="dp-title">Flag Detail</span>
+    <button class="dp-close" id="dp-close">✕</button>
+  </div>
+  <div class="dp-body" id="dp-body"></div>
+</div>
+
+<!-- ── AGENT DETAIL PANEL ────────────────────────────────── -->
+<div class="agent-panel" id="agent-panel">
+  <div class="dp-head">
+    <span class="dp-title" id="ap-title">Agent Detail</span>
+    <button class="dp-close" id="ap-close">✕</button>
+  </div>
+  <div class="dp-body" id="ap-body"></div>
+</div>
+
+<!-- ── CONFIGURE ALERT MODAL ─────────────────────────────── -->
+<div class="modal-overlay" id="alert-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">Configure Alert</span>
+      <button class="modal-close" id="alert-modal-close">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Agent</label>
+      <select class="form-control" id="alert-agent">
+        <option>All Agents</option>
+        <option>Revenue Analyst</option>
+        <option>GTM Pipeline</option>
+        <option>Creator Retention</option>
+        <option>Support Triage</option>
+        <option>Ads Attribution</option>
+        <option>Membership Forecast</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Metric</label>
+        <select class="form-control">
+          <option>Accuracy drops below</option>
+          <option>Flag rate exceeds</option>
+          <option>Schema change detected</option>
+          <option>Null join rate exceeds</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Threshold</label>
+        <input class="form-control" type="number" placeholder="e.g. 85" min="50" max="100" value="85">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notify via</label>
+      <select class="form-control" id="alert-notify">
+        <option>Slack</option>
+        <option>Email</option>
+        <option>Slack + Email</option>
+        <option>In-app only</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Slack channel</label>
+      <input class="form-control" type="text" placeholder="#data-alerts" value="#data-alerts">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Severity</label>
+      <select class="form-control">
+        <option>HIGH</option>
+        <option selected>MED</option>
+        <option>LOW</option>
+        <option>CRIT</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="alert-modal-cancel">Cancel</button>
+      <button class="btn btn-primary" id="alert-modal-save">Save Alert</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST CONTAINER ───────────────────────────────────── -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ── SCRIPTS (load order matters) ─────────────────────── -->
+<script src="js/data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/agents.js"></script>
+<script src="js/flags.js"></script>
+<script src="js/escalations.js"></script>
+<script src="js/modal.js"></script>
+<script src="js/export.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
