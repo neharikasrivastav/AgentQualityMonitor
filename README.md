@@ -1,4 +1,4 @@
-# AgentIQ — Agent Quality Monitor
+# Agent Quality Monitor
 
 A fully functional, single-file HTML prototype for monitoring AI agent health, query confidence, flagged responses, and escalation workflows in enterprise data environments.
 
@@ -8,10 +8,10 @@ Built to solve the **Enterprise Trust Gap** — the "Day 2" problem where compan
 
 ## Live Demo
 
-Open `wisdomai_agent_monitor_prototype (1).html` directly in any browser. No build step, no dependencies, no server required.
+Open `agent_quality_monitor.html` directly in any browser. No build step, no dependencies, no server required.
 
 ```bash
-open "wisdomai_agent_monitor_prototype (1).html"
+open "agent_quality_monitor.html"
 ```
 
 > Requires an internet connection for Chart.js (CDN) and Google Fonts to render correctly.
